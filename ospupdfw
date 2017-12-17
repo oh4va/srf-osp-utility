@@ -1,0 +1,181 @@
+#!/usr/bin/python
+'''
+SharkRF openSpot, download and update firmware
+Author: Veijo Arponen OH3NFC <oh3nfc@arpotechno.fi>
+'''
+
+import argparse
+import os
+import os.path
+import sys
+import urllib
+from getpass import getuser
+from time import sleep
+import serial
+import time
+
+CRLF = '\r\n'
+
+try:
+	from msvcrt import getch
+except ImportError:
+	def getch():
+		import sys, tty, termios
+		fd = sys.stdin.fileno()
+		old_settings = termios.tcgetattr(fd)
+		try:
+			tty.setraw(sys.stdin.fileno())
+			ch = sys.stdin.read(1)
+		finally:
+			termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+		return ch
+ 
+
+def open_serial(device):
+	"Open serial port"
+	ser = serial.Serial()
+	ser.port = device
+	ser.baudrate = 115200
+	ser.bytesize = serial.EIGHTBITS
+	ser.parity = serial.PARITY_NONE
+	ser.stopbits = serial.STOPBITS_ONE
+	ser.timeout = None
+	ser.xonxoff = False
+	ser.rtscts = False
+	ser.dsrdtr = False
+	ser.writeTimeout = 10
+
+	try:	
+		ser.open()
+		time.sleep(1)
+		ser.flushInput()
+	except Exception, e:
+		print "error open serial port: " + str(e)
+		exit()
+
+	return ser
+
+
+def ask_info(ser):
+
+	"Send 'inf' to the openSPOT"
+	ser.write("inf" + CRLF)
+	time.sleep(1)
+	info = "\nSharkRF openSPOT device information (" + ser.port + "):\n"
+	while ser.inWaiting() > 0:
+		info += ser.read(1)
+	print info
+
+	return
+
+def reboot_to_bootloader(serial):
+
+	"Send 'rbb' to the openSPOT"
+	print "Rebooting SharkRF openSPOT device to bootloader"
+	ser.write("rbb" + CRLF)
+	return
+
+
+def download(url, filename):
+
+	"Download the openSPOT firmware file"
+	if not os.path.isfile(filename):
+		print "Downloading the firmware:\n  " + url
+		# TODO: Check status, 404 Not Found
+		resp = urllib.urlretrieve(url, filename)
+	else:
+		print "Using already downloaded firmware:\n  " + filename
+	return
+
+
+if __name__ == '__main__':
+	parser = argparse.ArgumentParser(
+		description='Update SharkRF openSPOT firmware',
+		formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+	parser.add_argument('--version', action='version', 
+		version='%(prog)s v1.1.1')
+
+	parser.add_argument('-d', '--device', nargs='?', dest='device', 
+		default='/dev/ttyACM0',
+		help='serial device port where the openSPOT is connected to')
+
+	parser.add_argument('-i','--info', dest='info', action='store_true',
+		help='print openSPOT info and exit', )
+
+	parser.add_argument('-t','--type', dest='type',
+		help='firmware type', choices=['beta', 'stable'], default='stable')
+
+	parser.add_argument('-fw','--firmware', dest='fw_version',
+		help='firmware version to download and install', default='0131')
+
+	parser.add_argument('-hw','--hardware', dest='hw_version',
+		help='hardware version (see the sticker at bottom of your openSPOT)', 
+		default='1.1')
+
+	args = parser.parse_args()
+
+	# Print device info and exit
+	if args.info == True:
+		ser = open_serial(args.device)
+		ask_info(ser)
+		sys.exit(0)
+
+	# Download the firmware file
+	# Examples of download urls:
+	# 	https://x.sharkrf.com/fw/osp/srf-osp-1.1-0127.bin
+	# 	https://x.sharkrf.com/fw-beta/osp/srf-osp-1.1-0130.bin
+	host = 'x.sharkrf.com'
+	if args.type == 'stable':
+		directory = 'fw'
+	else:
+		directory = 'fw-beta'
+	filename = 'srf-osp-' + args.hw_version +'-' + args.fw_version + '.bin'
+	url = 'https://' + host + '/' + directory + '/osp/' + filename
+	download(url, filename)
+
+	# Open the serial port and read device information
+	print "Opening serial device " + args.device
+	ser = open_serial(args.device)
+	
+	# Print device info
+	ask_info(ser)
+
+	# Ask user confirmation for the firmware update
+	print "\nDo you want to continue (Y/N)?"
+	while True:
+		char = getch()
+		if char.lower() in ("y", "n"):
+			print char
+			break
+
+	# Stop updating process
+	if char == 'n':
+		print "Firmware update cancelled!"
+		sys.exit(2)
+
+	# Reboot to bootloader
+	reboot_to_bootloader(ser)
+	ser.close()
+
+	# Wait for the destination folder to show up
+	user = getuser()
+	dest = '/media/' + user + '/BOOTLOADER/'
+	print 'Waiting the bootloader directory ' + dest + ' to show up'
+	retrycnt = 0
+	while not os.path.exists(dest):
+		sleep(5)
+		retrycnt = retrycnt + 1
+		if retrycnt > 5:
+			print 'Error, no access to the bootloader directory ' + dest + ', exiting!'
+			sys.exit(-1)
+	sleep(1)
+
+	# Copy the firmware file to the destination folder
+	print "Copying " + filename + " to " + dest
+	print "Please, wait a couple of minutes"
+	os.system('cp ' + filename + ' ' + dest)
+	os.system('sync')
+
+	print "\nPlease, stand by one more minute, the openSPOT is starting up!"
+
