@@ -3,7 +3,7 @@
 ospupdfw is an utility written in Python which downloads and updates firmware of a SharkRF openSPOT device. 
 
 
-Usage:
+## Usage:
 
 ```
 Update SharkRF openSPOT firmware
@@ -26,7 +26,7 @@ optional arguments:
 
 ```
 
-Example output:
+## Example output:
 
 ```
 veijo@kirsikka:~/srf-osp-utility$ ./ospupdfw -t beta -fw 0132 
