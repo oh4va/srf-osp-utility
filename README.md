@@ -1,3 +1,30 @@
+# ospupdfw
+
+ospupdfw is an utility written in Python which downloads and updates firmware of a SharkRF openSPOT device. 
+
+
+Usage:
+
+```
+Update SharkRF openSPOT firmware
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+  -d [DEVICE], --device [DEVICE]
+                        serial device port where the openSPOT is connected to
+                        (default: /dev/ttyACM0)
+  -i, --info            print openSPOT info and exit (default: False)
+  -t {beta,stable}, --type {beta,stable}
+                        firmware type (default: stable)
+  -fw FW_VERSION, --firmware FW_VERSION
+                        firmware version to download and install (default:
+                        0131)
+  -hw HW_VERSION, --hardware HW_VERSION
+                        hardware version (see the sticker at bottom of your
+                        openSPOT) (default: 1.1)
+
+```
 
 Example output:
 
