@@ -107,7 +107,7 @@ if __name__ == '__main__':
 		help='firmware type', choices=['beta', 'stable'], default='stable')
 
 	parser.add_argument('-fw','--firmware', dest='fw_version',
-		help='firmware version to download and install', default='0138')
+		help='firmware version to download and install', default='0141')
 
 	parser.add_argument('-hw','--hardware', dest='hw_version',
 		help='hardware version (see the sticker at bottom of your openSPOT)', 
