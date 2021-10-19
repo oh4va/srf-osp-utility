@@ -125,7 +125,7 @@ if __name__ == '__main__':
 	# Examples of download urls:
 	# 	https://x.sharkrf.com/fw/osp/srf-osp-1.1-0127.bin
 	# 	https://x.sharkrf.com/fw-beta/osp/srf-osp-1.1-0130.bin
-	host = 'x.sharkrf.com'
+	host = 'sharkrf-x.fra1.cdn.digitaloceanspaces.com'
 	if args.type == 'stable':
 		directory = 'fw'
 	else:
